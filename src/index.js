@@ -32,3 +32,24 @@ app.post("/", (req, res) => {
     return res.send("parking lot is full");
   }
 });
+
+app.delete("/:slotNum", (req, res) => {
+  const result = mockDb.filter((car) => car.slot !== req.params.slotNum);
+  res.send(`new parking lot after removal ${result}`);
+});
+
+app.get("/:num", (req, res) => {
+  let index = mockDb.findIndex((car) => car.number === req.params.num);
+  if (index !== -1)
+    return res.send(
+      `car number is ${mockDb[index].number} and slot is ${mockDb[index].slot}`
+    );
+  else {
+    let index = mockDb.findIndex((car) => car.slot === req.params.num);
+    if (index !== -1)
+      return res.send(
+        `car number is ${mockDb[index].number} and slot is ${mockDb[index].slot}`
+      );
+    else return res.send("no car or slot was found");
+  }
+});
