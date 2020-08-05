@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import mockDb from "./mockDb";
 
 const app = express();
 
@@ -19,37 +18,83 @@ const generateSlotNum = () => {
   return result;
 };
 
+let mockDb = [
+  {
+    number: "663880992",
+    slot: "77b19082",
+  },
+  {
+    number: "663880945",
+    slot: "888a90123",
+  },
+  {
+    number: "663880908",
+    slot: "888a90122",
+  },
+  {
+    number: "663889032",
+    slot: "888a90120",
+  },
+];
+
+let now = Date.now();
+const interval = 10000;
+let tokens = 10;
+let timestamp = Date.now();
+
 app.listen(process.env.PORT || 8080, () => {
   console.log(`listening on port ${process.env.PORT}`);
 });
 
 app.post("/", (req, res) => {
-  if (mockDb.length < process.env.PARKINGLOTSIZE) {
-    const car = { number: req.body.carNum, slot: generateSlotNum() };
-    mockDb.push(car);
-    return res.send(car.slot);
-  } else {
-    return res.send("parking lot is full");
-  }
+  now = Date.now();
+  if (tokens > 0) {
+    tokens--;
+    timestamp = Date.now();
+    if (mockDb.length < process.env.PARKINGLOTSIZE) {
+      const car = { number: req.body.carNum, slot: generateSlotNum() };
+      mockDb.push(car);
+      return res.send(car.slot);
+    } else {
+      return res.send("parking lot is full");
+    }
+  } else res.send("access denied");
+  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
 });
 
 app.delete("/:slotNum", (req, res) => {
-  const result = mockDb.filter((car) => car.slot !== req.params.slotNum);
-  res.send(`new parking lot after removal ${result}`);
+  now = Date.now();
+  if (tokens > 0) {
+    tokens--;
+    timestamp = Date.now();
+    const result = mockDb.filter((car) => car.slot !== req.params.slotNum);
+    if (result.length === mockDb.length) res.send("no slot number found");
+    else {
+      mockDb = [...result];
+      res.send(`new parking lot after removal ${Object.values(result)}`);
+    }
+  } else res.send("access denied");
+  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
 });
 
 app.get("/:num", (req, res) => {
-  let index = mockDb.findIndex((car) => car.number === req.params.num);
-  if (index !== -1)
-    return res.send(
-      `car number is ${mockDb[index].number} and slot is ${mockDb[index].slot}`
-    );
-  else {
-    let index = mockDb.findIndex((car) => car.slot === req.params.num);
+  now = Date.now();
+  if (tokens > 0) {
+    tokens--;
+    timestamp = Date.now();
+    let index = mockDb.findIndex((car) => car.number === req.params.num);
     if (index !== -1)
       return res.send(
         `car number is ${mockDb[index].number} and slot is ${mockDb[index].slot}`
       );
-    else return res.send("no car or slot was found");
-  }
+    else {
+      let index = mockDb.findIndex((car) => car.slot === req.params.num);
+      if (index !== -1)
+        return res.send(
+          `car number is ${mockDb[index].number} and slot is ${mockDb[index].slot}`
+        );
+      else return res.send("no car or slot was found");
+    }
+  } else res.send("access denied");
+  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
 });
