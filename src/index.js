@@ -42,15 +42,21 @@ const interval = 10000;
 let tokens = 10;
 let timestamp = Date.now();
 
+const updateBucket = () => {
+  now = Date.now();
+  if (Math.floor((now - timestamp) / interval) > 0) {
+    tokens = 10;
+    timestamp = Date.now();
+  }
+};
+
 app.listen(process.env.PORT || 8080, () => {
   console.log(`listening on port ${process.env.PORT}`);
 });
 
 app.post("/", (req, res) => {
-  now = Date.now();
   if (tokens > 0) {
     tokens--;
-    timestamp = Date.now();
     if (mockDb.length < process.env.PARKINGLOTSIZE) {
       const car = { number: req.body.carNum, slot: generateSlotNum() };
       mockDb.push(car);
@@ -59,14 +65,12 @@ app.post("/", (req, res) => {
       return res.send("parking lot is full");
     }
   } else res.send("access denied");
-  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
+  updateBucket();
 });
 
 app.delete("/:slotNum", (req, res) => {
-  now = Date.now();
   if (tokens > 0) {
     tokens--;
-    timestamp = Date.now();
     const result = mockDb.filter((car) => car.slot !== req.params.slotNum);
     if (result.length === mockDb.length) res.send("no slot number found");
     else {
@@ -74,14 +78,12 @@ app.delete("/:slotNum", (req, res) => {
       res.send(`new parking lot after removal ${Object.values(result)}`);
     }
   } else res.send("access denied");
-  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
+  updateBucket();
 });
 
 app.get("/:num", (req, res) => {
-  now = Date.now();
   if (tokens > 0) {
     tokens--;
-    timestamp = Date.now();
     let index = mockDb.findIndex((car) => car.number === req.params.num);
     if (index !== -1)
       return res.send(
@@ -96,5 +98,5 @@ app.get("/:num", (req, res) => {
       else return res.send("no car or slot was found");
     }
   } else res.send("access denied");
-  if (Math.floor((now - timestamp) / interval) > 0) tokens = 10;
+  updateBucket();
 });
